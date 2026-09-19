@@ -4,23 +4,11 @@ void GPS::Run()
 {
 	logger = util::Logger(cfg.LOGFILE_ENABLED);
 
-	// std::ranges::fill(pathNodesToStream, 1);
-	// std::ranges::fill(pathNodes, -1);
-
-	// plugin::patch::SetPointer(0x44DE3C, pathNodesToStream.data());
-	// plugin::patch::SetPointer(0x450D03, pathNodesToStream.data());
-	// plugin::patch::SetPointer(0x451782, pathNodes.data());
-	// plugin::patch::SetPointer(0x451904, pathNodes.data());
-	// plugin::patch::SetPointer(0x451AC3, pathNodes.data());
-	// plugin::patch::SetPointer(0x451B33, pathNodes.data());
-	// plugin::patch::SetUInt(0x4518F8, 50000);
-	// plugin::patch::SetUInt(0x4519B0, 49950);
-
 	plugin::Events::gameProcessEvent += [this]() { this->GameEventHandle(); };
 
 	plugin::Events::drawRadarOverlayEvent += [this]() { this->DrawRadarOverlayHandle(); };
 
-	plugin::Events::drawRadarEvent += [this]() { this->DrawHudEventHandle(); };
+	plugin::Events::drawHudEvent += [this]() { this->DrawHudEventHandle(); };
 
 	plugin::Events::reInitGameEvent += [this]() {
 		mTrace = nullptr;
