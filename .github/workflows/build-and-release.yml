@@ -1,0 +1,66 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build GPS Redux
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: cmake -B build -A Win32
+
+      - name: Build Release
+        run: cmake --build build --config Release
+
+      - name: Create ZIP Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/Release/SA.GPS.REDUX.asi", "build/Release/SA.GPS.CONF.ini", "build/Release/README.md" -DestinationPath "build/Release/GTA-GPS-Redux.zip"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: GTA-GPS-Redux
+          path: |
+            build/Release/GTA-GPS-Redux.zip
+            build/Release/SA.GPS.REDUX.asi
+            build/Release/SA.GPS.CONF.ini
+
+      - name: Publish to GitHub Release
+        if: (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Latest Automated Build' }}
+          body: |
+            Automated build of GTA SA GPS Redux.
+            
+            ### Included Files:
+            - **`GTA-GPS-Redux.zip`**: Complete package with ASI and default configuration.
+            - **`SA.GPS.REDUX.asi`**: Standalone ASI plugin.
+            - **`SA.GPS.CONF.ini`**: Configuration file.
+            
+            *Built automatically by GitHub Actions (commit: `${{ github.sha }}`).*
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          files: |
+            build/Release/GTA-GPS-Redux.zip
+            build/Release/SA.GPS.REDUX.asi
+            build/Release/SA.GPS.CONF.ini
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
