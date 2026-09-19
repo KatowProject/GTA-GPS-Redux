@@ -40,40 +40,12 @@ void GPS::calculatePath(const CVector& destPosn, short &nodesCount, CNodeAddress
 
 void GPS::requestTargetPath(CVector destPosn)
 {
-	if (targetFuture.valid() && targetFuture.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
-		return;
-
-	targetFuture = std::async(std::launch::async, [this, destPosn]() {
-		short nodesCountTemp = 0;
-		float distanceTemp = 0.0f;
-		std::array<CNodeAddress, MAX_NODE_POINTS> nodesTemp{};
-
-		this->calculatePath(destPosn, nodesCountTemp, nodesTemp.data(), distanceTemp);
-
-		std::lock_guard<std::mutex> lock(pathMutex);
-		targetNodesCount = nodesCountTemp;
-		targetDistance = distanceTemp;
-		std::copy(nodesTemp.begin(), nodesTemp.end(), t_ResultNodes.begin());
-	});
+	this->calculatePath(destPosn, targetNodesCount, t_ResultNodes.data(), targetDistance);
 }
 
 void GPS::requestMissionPath(CVector destPosn)
 {
-	if (missionFuture.valid() && missionFuture.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
-		return;
-
-	missionFuture = std::async(std::launch::async, [this, destPosn]() {
-		short nodesCountTemp = 0;
-		float distanceTemp = 0.0f;
-		std::array<CNodeAddress, MAX_NODE_POINTS> nodesTemp{};
-
-		this->calculatePath(destPosn, nodesCountTemp, nodesTemp.data(), distanceTemp);
-
-		std::lock_guard<std::mutex> lock(pathMutex);
-		missionNodesCount = nodesCountTemp;
-		missionDistance = distanceTemp;
-		std::copy(nodesTemp.begin(), nodesTemp.end(), m_ResultNodes.begin());
-	});
+	this->calculatePath(destPosn, missionNodesCount, m_ResultNodes.data(), missionDistance);
 }
 
 // Events
@@ -85,7 +57,6 @@ void GPS::DrawRadarOverlayHandle()
 
 	if (renderTargetRoute)
 	{
-		std::lock_guard<std::mutex> lock(pathMutex);
 		this->renderPath(targetTracePos, -1, false, targetNodesCount, t_ResultNodes.data(), targetDistance,
 						 t_LineVerts.data());
 	}
@@ -389,7 +360,9 @@ void GPS::renderMissionTrace(tRadarTrace *trace)
 	case 1:
 		if (cfg.ENABLE_MOVING)
 		{
-			destVec = CPools::GetVehicle(trace->m_nEntityHandle)->GetPosition();
+			auto *vehicle = CPools::GetVehicle(trace->m_nEntityHandle);
+			if (!vehicle) { renderMissionRoute = false; return; }
+			destVec = vehicle->GetPosition();
 		}
 		else
 		{
@@ -400,7 +373,9 @@ void GPS::renderMissionTrace(tRadarTrace *trace)
 	case 2:
 		if (cfg.ENABLE_MOVING)
 		{
-			destVec = CPools::GetPed(trace->m_nEntityHandle)->GetPosition();
+			auto *ped = CPools::GetPed(trace->m_nEntityHandle);
+			if (!ped) { renderMissionRoute = false; return; }
+			destVec = ped->GetPosition();
 		}
 		else
 		{
@@ -409,8 +384,12 @@ void GPS::renderMissionTrace(tRadarTrace *trace)
 		}
 		break;
 	case 3:
-		destVec = CPools::GetObject(trace->m_nEntityHandle)->GetPosition();
+	{
+		auto *obj = CPools::GetObject(trace->m_nEntityHandle);
+		if (!obj) { renderMissionRoute = false; return; }
+		destVec = obj->GetPosition();
 		break;
+	}
 	case 6: // Searchlights
 	case 8: // Airstripts
 	case 0: // NONE???
@@ -430,7 +409,6 @@ void GPS::renderMissionTrace(tRadarTrace *trace)
 	{
 		this->requestMissionPath(destVec);
 
-		std::lock_guard<std::mutex> lock(pathMutex);
 		this->renderPath(destVec, trace->m_nColour, trace->m_bFriendly, missionNodesCount, m_ResultNodes.data(),
 						 missionDistance, m_LineVerts.data());
 	}

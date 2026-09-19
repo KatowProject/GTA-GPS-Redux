@@ -44,3 +44,4 @@
 numake/
 .DS_Store
 .idea
+build/

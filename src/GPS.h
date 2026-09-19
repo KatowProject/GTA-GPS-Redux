@@ -12,12 +12,11 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
-#include <future>
+
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <limits>
-#include <mutex>
 
 #include "CFont.h"
 #include "CGeneral.h"
@@ -99,9 +98,6 @@ class GPS
 	std::array<RwIm2DVertex, MAX_NODE_POINTS * 4> t_LineVerts{};
 	std::array<CNodeAddress, MAX_NODE_POINTS> m_ResultNodes{};
 	std::array<RwIm2DVertex, MAX_NODE_POINTS * 4> m_LineVerts{};
-	std::future<void> targetFuture;
-	std::future<void> missionFuture;
-	std::mutex pathMutex;
 
   public:
 	inline GPS()

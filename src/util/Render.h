@@ -3,7 +3,7 @@
 
 namespace util
 {
-	inline CRGBA SetupColor(short color, bool friendly, const struct Config& cfg)
+	inline CRGBA SetupColor(short color, bool friendly, const struct Config &cfg)
 	{
 		CRGBA clr;
 		if (cfg.ENABLE_CUSTOM_CLRS)

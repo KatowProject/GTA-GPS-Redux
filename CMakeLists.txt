@@ -77,6 +77,7 @@ target_include_directories(gps_redux PRIVATE
         "${plugin_sdk_SOURCE_DIR}/src/plugin_sa/game_sa/rw"
         "${plugin_sdk_SOURCE_DIR}/src/shared"
         "${plugin_sdk_SOURCE_DIR}/src/shared/game"
+        "${simd_string_SOURCE_DIR}"
         "${simd_string_SOURCE_DIR}/${SIMDSTRING_SUBDIR}"
 )
 
@@ -84,6 +85,7 @@ target_include_directories(gps_redux PRIVATE
 target_link_directories(gps_redux PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/d3dx9"
         "${plugin_sdk_SOURCE_DIR}/lib/plugin_sa"
+        "${simd_string_SOURCE_DIR}"
         "${simd_string_SOURCE_DIR}/${SIMDSTRING_SUBDIR}"
 )
 
