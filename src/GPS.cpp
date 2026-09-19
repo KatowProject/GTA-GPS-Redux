@@ -21,6 +21,12 @@ void GPS::Run()
 	plugin::Events::drawRadarOverlayEvent += [this]() { this->DrawRadarOverlayHandle(); };
 
 	plugin::Events::drawRadarEvent += [this]() { this->DrawHudEventHandle(); };
+
+	plugin::Events::reInitGameEvent += [this]() {
+		mTrace = nullptr;
+		renderMissionRoute = false;
+		renderTargetRoute = false;
+	};
 }
 
 void GPS::calculatePath(const CVector& destPosn, short &nodesCount, CNodeAddress *resultNodes, float &gpsDistance)
@@ -52,6 +58,9 @@ void GPS::requestMissionPath(CVector destPosn)
 
 void GPS::DrawRadarOverlayHandle()
 {
+	if (FrontEndMenuManager.m_bMenuActive)
+		return;
+
 	if (!util::NavEnabled(this->cfg, player))
 		return;
 
@@ -77,7 +86,19 @@ void GPS::DrawRadarOverlayHandle()
 
 void GPS::GameEventHandle()
 {
+	if (FrontEndMenuManager.m_bMenuActive)
+		return;
+
 	player = FindPlayerPed(0);
+	if (!player)
+		return;
+
+	if (!util::NavEnabled(this->cfg, player))
+	{
+		renderMissionRoute = false;
+		renderTargetRoute = false;
+		return;
+	}
 
 	renderTargetRoute = FrontEndMenuManager.m_nTargetBlipIndex == 0 ? false : true;
 
@@ -94,12 +115,6 @@ void GPS::GameEventHandle()
 
 		if (!renderMissionRoute)
 			mTrace = nullptr;
-	}
-
-	if (!util::NavEnabled(this->cfg, player))
-	{
-		renderMissionRoute = false;
-		return;
 	}
 
 	if (FrontEndMenuManager.m_nTargetBlipIndex &&
@@ -163,6 +178,9 @@ void GPS::GameEventHandle()
 
 void GPS::DrawHudEventHandle()
 {
+	if (FrontEndMenuManager.m_bMenuActive)
+		return;
+
 	if (!cfg.ENABLE_DISTANCE_TEXT)
 		return;
 
