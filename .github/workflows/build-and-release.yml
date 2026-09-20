@@ -2,10 +2,13 @@ name: Build & Release
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches:
+      - main
+    tags:
+      - '*'
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -13,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: Build GPS Redux
+    name: Build & Release
     runs-on: windows-latest
 
     steps:
@@ -21,6 +24,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0
 
       - name: Configure CMake
         run: cmake -B build -A Win32
@@ -31,36 +35,29 @@ jobs:
       - name: Create ZIP Package
         shell: pwsh
         run: |
-          Compress-Archive -Path "build/Release/SA.GPS.REDUX.asi", "build/Release/SA.GPS.CONF.ini", "build/Release/README.md" -DestinationPath "build/Release/GTA-GPS-Redux.zip"
+          Compress-Archive -Path "build/Release/SA.GPS.REDUX.asi", "SA.GPS.CONF.ini", "README.md" -DestinationPath "build/Release/GTA-GPS-Redux.zip" -Force
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: GTA-GPS-Redux
+          name: GTA-GPS-Redux-${{ github.ref_name }}
           path: |
             build/Release/GTA-GPS-Redux.zip
             build/Release/SA.GPS.REDUX.asi
-            build/Release/SA.GPS.CONF.ini
+            SA.GPS.CONF.ini
 
       - name: Publish to GitHub Release
-        if: (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main') && github.event_name != 'pull_request'
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
-          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Latest Automated Build' }}
-          body: |
-            Automated build of GTA SA GPS Redux.
-            
-            ### Included Files:
-            - **`GTA-GPS-Redux.zip`**: Complete package with ASI and default configuration.
-            - **`SA.GPS.REDUX.asi`**: Standalone ASI plugin.
-            - **`SA.GPS.CONF.ini`**: Configuration file.
-            
-            *Built automatically by GitHub Actions (commit: `${{ github.sha }}`).*
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true
           files: |
             build/Release/GTA-GPS-Redux.zip
             build/Release/SA.GPS.REDUX.asi
-            build/Release/SA.GPS.CONF.ini
+            SA.GPS.CONF.ini
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
